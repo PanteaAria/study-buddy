@@ -3,38 +3,83 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-app.use(cors({ origin: "*" })); // Allows all origins
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const ASSISTANT_ID = "asst_xxxxxxxx"; // Replace with your new Assistant ID
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: "*" }));
 
 app.post("/ask", async (req, res) => {
   const { question } = req.body;
 
   try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
+    // Step 1: Create a new thread (conversation)
+    const threadResponse = await axios.post(
+      "https://api.openai.com/v1/threads",
+      {},
       {
-        model: "gpt-4o",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are DPST1091/CPTG1391 Study Buddy, a student-friendly assistant for Introduction to Programming. Answer only based on the course materials provided and do not make up information." 
-          },
-          { role: "user", content: question }
-        ]
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+      }
+    );
+    
+    const threadId = threadResponse.data.id;
+
+    // Step 2: Send user message to thread
+    await axios.post(
+      `https://api.openai.com/v1/threads/${threadId}/messages`,
+      {
+        role: "user",
+        content: question
       },
       {
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
       }
     );
 
-    res.json({ response: response.data.choices[0].message.content });
+    // Step 3: Run the assistant on the thread
+    const runResponse = await axios.post(
+      `https://api.openai.com/v1/threads/${threadId}/runs`,
+      { assistant_id: ASSISTANT_ID },
+      {
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+      }
+    );
+
+    const runId = runResponse.data.id;
+
+    // Step 4: Wait for completion (polling method)
+    let runStatus = "in_progress";
+    while (runStatus === "in_progress") {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before checking again
+
+      const checkRun = await axios.get(
+        `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
+        {
+          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+        }
+      );
+
+      runStatus = checkRun.data.status;
+    }
+
+    // Step 5: Retrieve messages
+    const messagesResponse = await axios.get(
+      `https://api.openai.com/v1/threads/${threadId}/messages`,
+      {
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+      }
+    );
+
+    // Get the latest assistant response
+    const assistantMessage = messagesResponse.data.data.find(msg => msg.role === "assistant");
+
+    res.json({ response: assistantMessage.content });
+
   } catch (error) {
+    console.error("OpenAI Assistants API Error:", error.response ? error.response.data : error.message);
     res.status(500).json({ error: "Error communicating with OpenAI API" });
   }
 });
