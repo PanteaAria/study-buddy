@@ -24,7 +24,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Required header
+          "OpenAI-Beta": "assistants=v2"
         }
       }
     );
@@ -42,7 +42,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Required header
+          "OpenAI-Beta": "assistants=v2"
         }
       }
     );
@@ -55,7 +55,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Required header
+          "OpenAI-Beta": "assistants=v2"
         }
       }
     );
@@ -65,7 +65,7 @@ app.post("/ask", async (req, res) => {
     // Step 4: Wait for completion (polling method)
     let runStatus = "in_progress";
     while (runStatus === "in_progress") {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before checking again
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       const checkRun = await axios.get(
         `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
@@ -73,7 +73,7 @@ app.post("/ask", async (req, res) => {
           headers: {
             Authorization: `Bearer ${OPENAI_API_KEY}`,
             "Content-Type": "application/json",
-            "OpenAI-Beta": "assistants=v2" // Required header
+            "OpenAI-Beta": "assistants=v2"
           }
         }
       );
@@ -88,7 +88,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Required header
+          "OpenAI-Beta": "assistants=v2"
         }
       }
     );
@@ -96,27 +96,33 @@ app.post("/ask", async (req, res) => {
     // Extract the latest assistant message
     const assistantMessage = messagesResponse.data.data.find(msg => msg.role === "assistant");
 
+    console.log("Full Assistant Response:", JSON.stringify(assistantMessage, null, 2)); // Debugging log
+
+    let responseText = "";
+
     if (assistantMessage) {
-      // Handle content properly if it's an array of objects
-      let responseText = "";
-
       if (Array.isArray(assistantMessage.content)) {
-        responseText = assistantMessage.content.map(item => item.text || "").join("\n"); // Extract text from objects
-      } else {
+        responseText = assistantMessage.content
+          .map(item => (typeof item === "object" && item.text ? item.text : JSON.stringify(item)))
+          .join("\n");
+      } else if (typeof assistantMessage.content === "string") {
         responseText = assistantMessage.content;
+      } else {
+        responseText = "Sorry, I couldn't process the response.";
       }
-
-      res.json({ response: responseText });
     } else {
-      res.json({ response: "Sorry, I couldn't process your request." });
+      responseText = "No response from the assistant.";
     }
 
+    res.json({ response: responseText });
+
   } catch (error) {
-    console.error("OpenAI Assistants API Error:", error.response ? error.response.data : error.message);
+    console.error("OpenAI Assistants API Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
     res.status(500).json({ error: "Error communicating with OpenAI API" });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// ✅ FIX FOR RENDER: Bind to 0.0.0.0
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
