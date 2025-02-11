@@ -24,7 +24,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Added required header
+          "OpenAI-Beta": "assistants=v2" // Required header
         }
       }
     );
@@ -42,7 +42,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Added required header
+          "OpenAI-Beta": "assistants=v2" // Required header
         }
       }
     );
@@ -55,7 +55,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Added required header
+          "OpenAI-Beta": "assistants=v2" // Required header
         }
       }
     );
@@ -73,7 +73,7 @@ app.post("/ask", async (req, res) => {
           headers: {
             Authorization: `Bearer ${OPENAI_API_KEY}`,
             "Content-Type": "application/json",
-            "OpenAI-Beta": "assistants=v2" // Added required header
+            "OpenAI-Beta": "assistants=v2" // Required header
           }
         }
       );
@@ -88,7 +88,7 @@ app.post("/ask", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2" // Added required header
+          "OpenAI-Beta": "assistants=v2" // Required header
         }
       }
     );
@@ -97,7 +97,16 @@ app.post("/ask", async (req, res) => {
     const assistantMessage = messagesResponse.data.data.find(msg => msg.role === "assistant");
 
     if (assistantMessage) {
-      res.json({ response: assistantMessage.content });
+      // Handle content properly if it's an array of objects
+      let responseText = "";
+
+      if (Array.isArray(assistantMessage.content)) {
+        responseText = assistantMessage.content.map(item => item.text || "").join("\n"); // Extract text from objects
+      } else {
+        responseText = assistantMessage.content;
+      }
+
+      res.json({ response: responseText });
     } else {
       res.json({ response: "Sorry, I couldn't process your request." });
     }
