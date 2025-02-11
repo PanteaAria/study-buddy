@@ -7,7 +7,7 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Replace with your new Assistant ID
+const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Replace with your actual Assistant ID
 
 app.use(express.json());
 app.use(cors({ origin: "*" }));
@@ -16,7 +16,7 @@ app.post("/ask", async (req, res) => {
   const { question } = req.body;
 
   try {
-    // Step 1: Create a new thread (conversation)
+    // Step 1: Create a new thread
     const threadResponse = await axios.post(
       "https://api.openai.com/v1/threads",
       {},
@@ -24,7 +24,7 @@ app.post("/ask", async (req, res) => {
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
       }
     );
-    
+
     const threadId = threadResponse.data.id;
 
     // Step 2: Send user message to thread
@@ -65,7 +65,7 @@ app.post("/ask", async (req, res) => {
       runStatus = checkRun.data.status;
     }
 
-    // Step 5: Retrieve messages
+    // Step 5: Retrieve messages from the Assistant
     const messagesResponse = await axios.get(
       `https://api.openai.com/v1/threads/${threadId}/messages`,
       {
@@ -73,10 +73,14 @@ app.post("/ask", async (req, res) => {
       }
     );
 
-    // Get the latest assistant response
+    // Extract the latest assistant message
     const assistantMessage = messagesResponse.data.data.find(msg => msg.role === "assistant");
 
-    res.json({ response: assistantMessage.content });
+    if (assistantMessage) {
+      res.json({ response: assistantMessage.content });
+    } else {
+      res.json({ response: "Sorry, I couldn't process your request." });
+    }
 
   } catch (error) {
     console.error("OpenAI Assistants API Error:", error.response ? error.response.data : error.message);
