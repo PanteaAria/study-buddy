@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+app.use(cors({ origin: "*" })); // Allows all origins
 
 const app = express();
 const PORT = process.env.PORT || 5000;
