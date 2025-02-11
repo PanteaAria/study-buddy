@@ -103,10 +103,8 @@ app.post("/ask", async (req, res) => {
     if (assistantMessage) {
       if (Array.isArray(assistantMessage.content)) {
         responseText = assistantMessage.content
-          .map(item => (typeof item === "object" && item.text ? item.text : JSON.stringify(item)))
+          .map(item => (item.type === "text" && item.text.value ? item.text.value : ""))
           .join("\n");
-      } else if (typeof assistantMessage.content === "string") {
-        responseText = assistantMessage.content;
       } else {
         responseText = "Sorry, I couldn't process the response.";
       }
@@ -122,7 +120,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// ✅ FIX FOR RENDER: Bind to 0.0.0.0
+// ✅ Fix for Render: Bind to 0.0.0.0
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
