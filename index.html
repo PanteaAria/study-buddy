@@ -40,10 +40,10 @@
             chatBox.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
 
             try {
-                const response = await fetch("https://study-buddy-tvni.onrender.com/ask-gpt", { 
+                const response = await fetch("https://study-buddy-tvni.onrender.com/ask", {  // ✅ FIXED URL
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: userInput }),
+                    body: JSON.stringify({ question: userInput }), // ✅ FIXED KEY
                 });
 
                 const data = await response.json();
