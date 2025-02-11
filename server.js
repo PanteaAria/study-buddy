@@ -21,7 +21,11 @@ app.post("/ask", async (req, res) => {
       "https://api.openai.com/v1/threads",
       {},
       {
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+          "OpenAI-Beta": "assistants=v2" // Added required header
+        }
       }
     );
 
@@ -35,7 +39,11 @@ app.post("/ask", async (req, res) => {
         content: question
       },
       {
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+          "OpenAI-Beta": "assistants=v2" // Added required header
+        }
       }
     );
 
@@ -44,7 +52,11 @@ app.post("/ask", async (req, res) => {
       `https://api.openai.com/v1/threads/${threadId}/runs`,
       { assistant_id: ASSISTANT_ID },
       {
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+          "OpenAI-Beta": "assistants=v2" // Added required header
+        }
       }
     );
 
@@ -58,7 +70,11 @@ app.post("/ask", async (req, res) => {
       const checkRun = await axios.get(
         `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
         {
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2" // Added required header
+          }
         }
       );
 
@@ -69,7 +85,11 @@ app.post("/ask", async (req, res) => {
     const messagesResponse = await axios.get(
       `https://api.openai.com/v1/threads/${threadId}/messages`,
       {
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" }
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+          "OpenAI-Beta": "assistants=v2" // Added required header
+        }
       }
     );
 
