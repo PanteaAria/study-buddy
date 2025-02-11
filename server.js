@@ -7,7 +7,7 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ASSISTANT_ID = "asst_xxxxxxxx"; // Replace with your new Assistant ID
+const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Replace with your new Assistant ID
 
 app.use(express.json());
 app.use(cors({ origin: "*" }));
