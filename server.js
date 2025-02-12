@@ -2,7 +2,6 @@ const axios = require("axios");
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-// const multer = require("multer"); // ❌ Temporarily disabled file upload
 
 // ✅ Initialize Express
 const app = express();
@@ -14,10 +13,14 @@ const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Ensure this is correct
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
-// ❌ TEMPORARILY DISABLING FILE UPLOADS FOR DEBUGGING
-// const upload = multer({ dest: "uploads/" });
+// ❌ Removing Code Interpreter from Assistant
+const assistant = {
+  instructions: "You are a coding assistant. Answer user queries and provide programming help.",
+  model: "gpt-4o",
+  tools: [] // ❌ No tools (Code Interpreter removed)
+};
 
-// ❌ Commenting out file upload route to see if it fixes the assistant issue
+// ❌ TEMPORARILY DISABLING FILE UPLOADS FOR DEBUGGING
 // app.post("/upload", upload.single("file"), async (req, res) => {
 //   return res.json({ message: "File upload temporarily disabled for debugging." });
 // });
