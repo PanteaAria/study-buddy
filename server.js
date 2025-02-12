@@ -1,23 +1,26 @@
 const axios = require("axios");
-const fs = require("fs");
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const multer = require("multer");
+// const multer = require("multer"); // ❌ Temporarily disabled file upload
 
 // ✅ Initialize Express
 const app = express();
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Ensure correct ID
-
-// ✅ Configure file uploads
-const upload = multer({ dest: "uploads/" });
+const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Ensure this is correct
 
 // ✅ Middleware setup
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
+// ❌ TEMPORARILY DISABLING FILE UPLOADS FOR DEBUGGING
+// const upload = multer({ dest: "uploads/" });
+
+// ❌ Commenting out file upload route to see if it fixes the assistant issue
+// app.post("/upload", upload.single("file"), async (req, res) => {
+//   return res.json({ message: "File upload temporarily disabled for debugging." });
+// });
 
 // ✅ Handle user questions
 app.post("/ask", async (req, res) => {
@@ -97,7 +100,25 @@ app.post("/ask", async (req, res) => {
 
     if (runStatus === "failed") {
       console.error("❌ Assistant failed to process the request.");
-      return res.status(500).json({ error: "Assistant failed to process the request. Try again later." });
+
+      // Fetch and log failure details
+      const failedRunDetails = await axios.get(
+        `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2"
+          }
+        }
+      );
+
+      console.error("🔍 Failure Details:", JSON.stringify(failedRunDetails.data, null, 2));
+
+      return res.status(500).json({
+        error: "Assistant failed to process the request.",
+        details: failedRunDetails.data
+      });
     }
 
     // ✅ Step 5: Retrieve messages from the Assistant
@@ -123,7 +144,7 @@ app.post("/ask", async (req, res) => {
       if (assistantMessage) {
         responseText = assistantMessage.content
           .map(item => (item.type === "text" && item.text?.value ? item.text.value : ""))
-          .filter(text => text) // Remove empty values
+          .filter(text => text)
           .join("\n");
 
         responseText = responseText.replace(/\【.*?\】/g, "").trim();
@@ -139,6 +160,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
+// ✅ Fix for Render: Bind to 0.0.0.0
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
