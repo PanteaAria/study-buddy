@@ -65,10 +65,14 @@ app.post("/ask", async (req, res) => {
     const runId = runResponse.data.id;
     console.log("Run ID:", runId);
 
-    // Step 4: Polling until the assistant completes response
+    // Step 4: Polling until the assistant completes response (with retry limit)
     let runStatus = "in_progress";
-    while (runStatus === "in_progress" || runStatus === "queued") {
+    let retries = 0;
+    const maxRetries = 15; // Max wait = 15 * 2s = 30 seconds
+
+    while ((runStatus === "in_progress" || runStatus === "queued") && retries < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, 2000));
+      retries++;
 
       const checkRun = await axios.get(
         `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
@@ -85,6 +89,25 @@ app.post("/ask", async (req, res) => {
       console.log(`Run Status: ${runStatus}`);
     }
 
+    // If the run fails, log the reason and return an error response
+    if (runStatus === "failed") {
+      console.error("❌ Assistant failed to process the request.");
+      
+      const failedRunDetails = await axios.get(
+        `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2"
+          }
+        }
+      );
+
+      console.error("Failure Details:", JSON.stringify(failedRunDetails.data, null, 2));
+      return res.status(500).json({ error: "Assistant failed to process the request. Try again later." });
+    }
+
     // Step 5: Retrieve messages from the Assistant
     const messagesResponse = await axios.get(
       `https://api.openai.com/v1/threads/${threadId}/messages`,
@@ -99,13 +122,13 @@ app.post("/ask", async (req, res) => {
 
     console.log("Full Messages API Response:", JSON.stringify(messagesResponse.data, null, 2));
 
-    // ✅ Fix: Ensure correct response extraction
+    // ✅ Extract the assistant's response
     let responseText = "No response from the assistant.";
 
-    if (messagesResponse.data && messagesResponse.data.data) {
+    if (messagesResponse.data?.data?.length > 0) {
       const assistantMessage = messagesResponse.data.data.find(msg => msg.role === "assistant");
 
-      if (assistantMessage?.content?.length > 0) {
+      if (assistantMessage) {
         responseText = assistantMessage.content
           .map(item => (item.type === "text" && item.text?.value ? item.text.value : ""))
           .filter(text => text) // Remove empty values
@@ -117,7 +140,7 @@ app.post("/ask", async (req, res) => {
     res.json({ response: responseText });
 
   } catch (error) {
-    console.error("OpenAI API Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+    console.error("❌ OpenAI API Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
     res.status(500).json({ error: "Error communicating with OpenAI API" });
   }
 });
