@@ -133,6 +133,9 @@ app.post("/ask", async (req, res) => {
           .map(item => (item.type === "text" && item.text?.value ? item.text.value : ""))
           .filter(text => text) // Remove empty values
           .join("\n");
+
+        // ✅ Remove citations like 
+        responseText = responseText.replace(/\【.*?\】/g, "").trim();
       }
     }
 

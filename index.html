@@ -8,53 +8,119 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h2 {
+            color: #333;
         }
         #chat-box {
-            width: 300px;
-            height: 250px;
+            width: 100%;
+            height: 300px; /* ✅ Bigger chat window */
             border: 1px solid #ccc;
             padding: 10px;
             overflow-y: auto;
-            margin-bottom: 10px;
+            background: #fafafa;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 16px;
         }
-        input, button {
-            width: 300px;
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        .user {
+            background: #d1e7fd;
+            text-align: right;
+        }
+        .assistant {
+            background: #e6e6e6;
+        }
+        input {
+            width: calc(100% - 20px);
             padding: 10px;
-            margin: 5px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .loading {
+            font-style: italic;
+            color: #888;
         }
     </style>
 </head>
 <body>
-    <h2>Ask Me Anything</h2>
-    <div id="chat-box"></div>
-    <input type="text" id="user-input" placeholder="Type your question...">
-    <button onclick="sendMessage()">Ask</button>
+
+    <div class="container">
+        <h2>Ask Me Anything</h2>
+        <div id="chat-box"></div>
+        <input type="text" id="user-input" placeholder="Type your question..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Ask</button>
+    </div>
 
     <script>
         async function sendMessage() {
-            const userInput = document.getElementById("user-input").value;
+            const userInput = document.getElementById("user-input").value.trim();
             const chatBox = document.getElementById("chat-box");
 
             if (!userInput) return;
 
-            chatBox.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
+            chatBox.innerHTML += `<div class="message user"><strong>You:</strong> ${userInput}</div>`;
+            chatBox.innerHTML += `<div class="message assistant loading" id="loading">Thinking...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+
+            document.getElementById("user-input").value = "";
 
             try {
-                const response = await fetch("https://study-buddy-tvni.onrender.com/ask", {  // ✅ FIXED URL
+                const response = await fetch("https://study-buddy-tvni.onrender.com/ask", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ question: userInput }), // ✅ FIXED KEY
+                    body: JSON.stringify({ question: userInput }),
                 });
 
                 const data = await response.json();
-                chatBox.innerHTML += `<p><strong>GPT:</strong> ${data.response}</p>`;
+                document.getElementById("loading").remove(); // Remove loading indicator
+                chatBox.innerHTML += `<div class="message assistant"><strong>GPT:</strong> ${data.response}</div>`;
 
             } catch (error) {
-                chatBox.innerHTML += `<p><strong>Error:</strong> Unable to fetch response.</p>`;
+                document.getElementById("loading").remove(); // Remove loading indicator
+                chatBox.innerHTML += `<div class="message assistant"><strong>Error:</strong> Unable to fetch response.</div>`;
             }
 
-            document.getElementById("user-input").value = "";
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
         }
     </script>
+
 </body>
 </html>
