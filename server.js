@@ -7,32 +7,20 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Ensure this is correct
+const ASSISTANT_ID = "asst_qfiI7AN6r8vlmPPtdd9ybbxe"; // Ensure correct ID
 
 // ✅ Middleware setup
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
-// ❌ Removing Code Interpreter from Assistant
-const assistant = {
-  instructions: "You are a coding assistant. Answer user queries and provide programming help.",
-  model: "gpt-4o",
-  tools: [] // ❌ No tools (Code Interpreter removed)
-};
-
-// ❌ TEMPORARILY DISABLING FILE UPLOADS FOR DEBUGGING
-// app.post("/upload", upload.single("file"), async (req, res) => {
-//   return res.json({ message: "File upload temporarily disabled for debugging." });
-// });
-
-// ✅ Handle user questions
+// ✅ Main route
 app.post("/ask", async (req, res) => {
   const { question } = req.body;
 
   try {
     console.log("Received question:", question);
 
-    // ✅ Step 1: Create a new thread
+    // Step 1: Create a new thread
     const threadResponse = await axios.post(
       "https://api.openai.com/v1/threads",
       {},
@@ -48,7 +36,7 @@ app.post("/ask", async (req, res) => {
     const threadId = threadResponse.data.id;
     console.log("Created Thread ID:", threadId);
 
-    // ✅ Step 2: Send user message to the thread
+    // Step 2: Send user message to the thread
     await axios.post(
       `https://api.openai.com/v1/threads/${threadId}/messages`,
       { role: "user", content: question },
@@ -61,7 +49,7 @@ app.post("/ask", async (req, res) => {
       }
     );
 
-    // ✅ Step 3: Run the assistant
+    // Step 3: Run the assistant
     const runResponse = await axios.post(
       `https://api.openai.com/v1/threads/${threadId}/runs`,
       { assistant_id: ASSISTANT_ID },
@@ -77,10 +65,10 @@ app.post("/ask", async (req, res) => {
     const runId = runResponse.data.id;
     console.log("Run ID:", runId);
 
-    // ✅ Step 4: Polling until the assistant completes response
+    // Step 4: Polling until the assistant completes response (with retry limit)
     let runStatus = "in_progress";
     let retries = 0;
-    const maxRetries = 15;
+    const maxRetries = 15; // Max wait = 15 * 2s = 30 seconds
 
     while ((runStatus === "in_progress" || runStatus === "queued") && retries < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -101,10 +89,10 @@ app.post("/ask", async (req, res) => {
       console.log(`Run Status: ${runStatus}`);
     }
 
+    // If the run fails, log the reason and return an error response
     if (runStatus === "failed") {
       console.error("❌ Assistant failed to process the request.");
-
-      // Fetch and log failure details
+      
       const failedRunDetails = await axios.get(
         `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
         {
@@ -116,15 +104,11 @@ app.post("/ask", async (req, res) => {
         }
       );
 
-      console.error("🔍 Failure Details:", JSON.stringify(failedRunDetails.data, null, 2));
-
-      return res.status(500).json({
-        error: "Assistant failed to process the request.",
-        details: failedRunDetails.data
-      });
+      console.error("Failure Details:", JSON.stringify(failedRunDetails.data, null, 2));
+      return res.status(500).json({ error: "Assistant failed to process the request. Try again later." });
     }
 
-    // ✅ Step 5: Retrieve messages from the Assistant
+    // Step 5: Retrieve messages from the Assistant
     const messagesResponse = await axios.get(
       `https://api.openai.com/v1/threads/${threadId}/messages`,
       {
@@ -147,9 +131,10 @@ app.post("/ask", async (req, res) => {
       if (assistantMessage) {
         responseText = assistantMessage.content
           .map(item => (item.type === "text" && item.text?.value ? item.text.value : ""))
-          .filter(text => text)
+          .filter(text => text) // Remove empty values
           .join("\n");
 
+        // ✅ Remove citations like 
         responseText = responseText.replace(/\【.*?\】/g, "").trim();
       }
     }
