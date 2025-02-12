@@ -124,7 +124,7 @@ app.post("/ask", async (req, res) => {
     // ✅ Step 4: Polling until the assistant completes response
     let runStatus = "in_progress";
     let retries = 0;
-    const maxRetries = 15; // Max wait = 15 * 2s = 30 seconds
+    const maxRetries = 15;
 
     while ((runStatus === "in_progress" || runStatus === "queued") && retries < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -145,7 +145,6 @@ app.post("/ask", async (req, res) => {
       console.log(`Run Status: ${runStatus}`);
     }
 
-    // ✅ Handle failed runs
     if (runStatus === "failed") {
       console.error("❌ Assistant failed to process the request.");
       return res.status(500).json({ error: "Assistant failed to process the request. Try again later." });
@@ -177,7 +176,6 @@ app.post("/ask", async (req, res) => {
           .filter(text => text) // Remove empty values
           .join("\n");
 
-        // ✅ Remove citations like 
         responseText = responseText.replace(/\【.*?\】/g, "").trim();
       }
     }
@@ -191,7 +189,6 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// ✅ Fix for Render: Bind to 0.0.0.0
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
