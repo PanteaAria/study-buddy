@@ -18,56 +18,6 @@ const upload = multer({ dest: "uploads/" });
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
-// ✅ Upload a file and attach it to the assistant
-app.post("/upload", upload.single("file"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded." });
-
-  try {
-    // ✅ Upload the file to OpenAI
-    const fileResponse = await axios.post(
-      "https://api.openai.com/v1/files",
-      {
-        file: fs.createReadStream(req.file.path),
-        purpose: "assistants"
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "multipart/form-data",
-          "OpenAI-Beta": "assistants=v2"
-        }
-      }
-    );
-
-    const fileId = fileResponse.data.id;
-    console.log("Uploaded File ID:", fileId);
-
-    // ✅ Attach file to assistant
-    await axios.post(
-      `https://api.openai.com/v1/assistants/${ASSISTANT_ID}`,
-      {
-        tool_resources: {
-          "code_interpreter": {
-            "file_ids": [fileId]
-          }
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-          "OpenAI-Beta": "assistants=v2"
-        }
-      }
-    );
-
-    res.json({ message: "File uploaded successfully.", fileId });
-
-  } catch (error) {
-    console.error("❌ File Upload Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
-    res.status(500).json({ error: "File upload failed." });
-  }
-});
 
 // ✅ Handle user questions
 app.post("/ask", async (req, res) => {
