@@ -25,7 +25,7 @@
         }
         #chat-box {
             width: 100%;
-            height: 300px; /* ✅ Bigger chat window */
+            height: 300px;
             border: 1px solid #ccc;
             padding: 10px;
             overflow-y: auto;
@@ -46,23 +46,19 @@
         .assistant {
             background: #e6e6e6;
         }
-        input {
+        input, button, label {
             width: calc(100% - 20px);
             padding: 10px;
             margin-top: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 16px;
+            display: block;
         }
         button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
             cursor: pointer;
         }
         button:hover {
@@ -72,6 +68,20 @@
             font-style: italic;
             color: #888;
         }
+        #file-upload {
+            display: none;
+        }
+        .upload-label {
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            display: inline-block;
+            border-radius: 5px;
+        }
+        .upload-label:hover {
+            background: #218838;
+        }
     </style>
 </head>
 <body>
@@ -79,8 +89,12 @@
     <div class="container">
         <h2>Ask Me Anything</h2>
         <div id="chat-box"></div>
+
         <input type="text" id="user-input" placeholder="Type your question..." onkeypress="handleKeyPress(event)">
         <button onclick="sendMessage()">Ask</button>
+
+        <label for="file-upload" class="upload-label">Upload File</label>
+        <input type="file" id="file-upload" accept=".csv,.pdf,.json,.txt,.docx" onchange="uploadFile()">
     </div>
 
     <script>
@@ -104,21 +118,58 @@
                 });
 
                 const data = await response.json();
-                document.getElementById("loading").remove(); // Remove loading indicator
+                document.getElementById("loading").remove();
                 chatBox.innerHTML += `<div class="message assistant"><strong>GPT:</strong> ${data.response}</div>`;
 
             } catch (error) {
-                document.getElementById("loading").remove(); // Remove loading indicator
+                document.getElementById("loading").remove();
                 chatBox.innerHTML += `<div class="message assistant"><strong>Error:</strong> Unable to fetch response.</div>`;
             }
 
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function handleKeyPress(event) {
             if (event.key === "Enter") {
                 sendMessage();
             }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById("file-upload");
+            const chatBox = document.getElementById("chat-box");
+
+            if (!fileInput.files.length) return;
+            const file = fileInput.files[0];
+
+            chatBox.innerHTML += `<div class="message user"><strong>You:</strong> Uploading file "${file.name}"...</div>`;
+            chatBox.innerHTML += `<div class="message assistant loading" id="loading">Processing file...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch("https://study-buddy-tvni.onrender.com/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+                document.getElementById("loading").remove();
+
+                if (data.fileId) {
+                    chatBox.innerHTML += `<div class="message assistant"><strong>GPT:</strong> File uploaded successfully. Now you can ask questions about it.</div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="message assistant"><strong>Error:</strong> File upload failed.</div>`;
+                }
+
+            } catch (error) {
+                document.getElementById("loading").remove();
+                chatBox.innerHTML += `<div class="message assistant"><strong>Error:</strong> Unable to upload file.</div>`;
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 
