@@ -21,16 +21,17 @@ def parse_timetable(html):
     for row in rows:
         cols = row.find_all("td")
         if len(cols) >= 5:  # Ensure we have enough columns
-            session_type = cols[0].text.strip()
-            day = cols[1].text.strip()
-            time = cols[2].text.strip()
-            location = cols[3].text.strip()
-            staff = cols[4].text.strip()
+            day = cols[0].text.strip()            # Correct: Day of the session (e.g., Tuesday)
+            start_time = cols[1].text.strip()      # Correct: Start time (e.g., 1:00pm)
+            end_time = cols[2].text.strip()        # Correct: End time (e.g., 2:00pm)
+            staff = cols[3].text.strip()           # Correct: Instructor name
+            location = cols[4].text.strip()        # Correct: Location (e.g., Online)
+            session_type = "Lecture" if "Lecture" in location else "Tutorial"  # Guess based on location
 
             timetable.append({
                 "type": session_type,
                 "day": day,
-                "time": time,
+                "time": f"{start_time} - {end_time}",
                 "location": location,
                 "staff": staff
             })
