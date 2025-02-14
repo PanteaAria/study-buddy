@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
 import requests
 from bs4 import BeautifulSoup
+import uvicorn
 
 app = FastAPI()
 
@@ -36,6 +37,11 @@ def parse_timetable(html):
 
     return timetable
 
+@app.get("/")
+def home():
+    """ Root endpoint to check if the API is live """
+    return {"message": "Study Buddy API is running! Visit /extract-timetable to get timetable data."}
+
 @app.get("/extract-timetable")
 def extract_timetable(url: str = Query(TIMETABLE_URL, description="Timetable page URL")):
     try:
@@ -48,3 +54,7 @@ def extract_timetable(url: str = Query(TIMETABLE_URL, description="Timetable pag
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    # Force Uvicorn to run on the correct port
+    uvicorn.run(app, host="0.0.0.0", port=8000)
